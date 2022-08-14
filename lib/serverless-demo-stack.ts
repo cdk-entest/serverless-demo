@@ -1,5 +1,6 @@
-// aws sqs send-message --message-body "Hello Hai" --queue-url https://sqs.ap-southeast-1.amazonaws.com/392194582387/sqsQueueApiGatewayDemo
-// curl https://v9jrmidlkf.execute-api.ap-southeast-1.amazonaws.com/prod/queue?message='Hello'
+// aws sqs send-message --message-body "Hello Hai" --queue-url $QUEUE_URL
+// curl https://$API_URL/queue?message='Hello'
+
 import {
   aws_apigateway,
   aws_dynamodb,
@@ -31,16 +32,10 @@ export class ServerlessDemoStack extends Stack {
     super(scope, id, props);
 
     // role for lambda
-    const role = new aws_iam.Role(
-      this,
-      "RoleForLambdaIcaServerlessDemo",
-      {
-        assumedBy: new aws_iam.ServicePrincipal(
-          "lambda.amazonaws.com"
-        ),
-        roleName: "RoleForLambdaIcaServerlessDemo",
-      }
-    );
+    const role = new aws_iam.Role(this, "RoleForLambdaIcaServerlessDemo", {
+      assumedBy: new aws_iam.ServicePrincipal("lambda.amazonaws.com"),
+      roleName: "RoleForLambdaIcaServerlessDemo",
+    });
 
     // inline policies
     role.attachInlinePolicy(
@@ -77,27 +72,19 @@ export class ServerlessDemoStack extends Stack {
       runtime: aws_lambda.Runtime.PYTHON_3_8,
       memorySize: 512,
       timeout: Duration.seconds(15),
-      code: aws_lambda.Code.fromAsset(
-        path.join(__dirname, "./../lambda")
-      ),
+      code: aws_lambda.Code.fromAsset(path.join(__dirname, "./../lambda")),
       handler: "lambda_write_ddb.handler",
       role: role,
     });
 
     // lambda send sns
-    const lambda_sns = new aws_lambda.Function(
-      this,
-      "IcaLambdaSnsDemo",
-      {
-        functionName: "LambdaSnsIcaDemo",
-        code: aws_lambda.Code.fromAsset(
-          path.join(__dirname, "./../lambda")
-        ),
-        handler: "lambda_send_sns.handler",
-        runtime: aws_lambda.Runtime.PYTHON_3_8,
-        role: role,
-      }
-    );
+    const lambda_sns = new aws_lambda.Function(this, "IcaLambdaSnsDemo", {
+      functionName: "LambdaSnsIcaDemo",
+      code: aws_lambda.Code.fromAsset(path.join(__dirname, "./../lambda")),
+      handler: "lambda_send_sns.handler",
+      runtime: aws_lambda.Runtime.PYTHON_3_8,
+      role: role,
+    });
 
     // an existed s3 trigger a lambda
     const bucket = aws_s3.Bucket.fromBucketName(
@@ -153,9 +140,7 @@ export class LambdaApiGatewayIcaDemo extends Stack {
     // create a lambda
     const func = new aws_lambda.Function(this, "LambdaApiGwIcaDemo", {
       functionName: "LambdaApiGwIcaDemo",
-      code: aws_lambda.Code.fromAsset(
-        path.join(__dirname, "./../lambda")
-      ),
+      code: aws_lambda.Code.fromAsset(path.join(__dirname, "./../lambda")),
       handler: "lambda_api_gw.handler",
       runtime: aws_lambda.Runtime.PYTHON_3_8,
       memorySize: 512,
@@ -171,10 +156,7 @@ export class LambdaApiGatewayIcaDemo extends Stack {
     const api_resource = api_gw.root.addResource("books");
 
     // add method
-    api_resource.addMethod(
-      "GET",
-      new aws_apigateway.LambdaIntegration(func)
-    );
+    api_resource.addMethod("GET", new aws_apigateway.LambdaIntegration(func));
   }
 }
 
@@ -187,45 +169,33 @@ export class ApiGatewaySqsIcaDemoStack extends Stack {
       this,
       "RoleForLambdaSqsIcaServerlessDemo",
       {
-        assumedBy: new aws_iam.ServicePrincipal(
-          "lambda.amazonaws.com"
-        ),
+        assumedBy: new aws_iam.ServicePrincipal("lambda.amazonaws.com"),
         roleName: "RoleForLambdaSqsIcaServerlessDemo",
       }
     );
 
     // inline policies
     lambda_role.attachInlinePolicy(
-      new aws_iam.Policy(
-        this,
-        "PolicyForLambdaSqsIcaServerlessDemox",
-        {
-          policyName: "PolicyForLambdaSqsIcaServerlessDemo",
-          statements: [
-            // send sns
-            new aws_iam.PolicyStatement({
-              effect: aws_iam.Effect.ALLOW,
-              actions: ["sns:*"],
-              resources: ["*"],
-            }),
-          ],
-        }
-      )
+      new aws_iam.Policy(this, "PolicyForLambdaSqsIcaServerlessDemox", {
+        policyName: "PolicyForLambdaSqsIcaServerlessDemo",
+        statements: [
+          // send sns
+          new aws_iam.PolicyStatement({
+            effect: aws_iam.Effect.ALLOW,
+            actions: ["sns:*"],
+            resources: ["*"],
+          }),
+        ],
+      })
     );
 
     // lambda to consume the message from queue
-    const fn = new aws_lambda.Function(
-      this,
-      "LambdaConsumeSqsMessageDemo",
-      {
-        functionName: "LambdaConsumeSqsMessageDemo",
-        runtime: aws_lambda.Runtime.PYTHON_3_8,
-        code: aws_lambda.Code.fromAsset(
-          path.join(__dirname, "./../lambda")
-        ),
-        handler: "lambda_sqs.handler",
-      }
-    );
+    const fn = new aws_lambda.Function(this, "LambdaConsumeSqsMessageDemo", {
+      functionName: "LambdaConsumeSqsMessageDemo",
+      runtime: aws_lambda.Runtime.PYTHON_3_8,
+      code: aws_lambda.Code.fromAsset(path.join(__dirname, "./../lambda")),
+      handler: "lambda_sqs.handler",
+    });
 
     // create sqs
     const queue = new aws_sqs.Queue(this, "sqsApiGatewayDemo", {
@@ -235,9 +205,7 @@ export class ApiGatewaySqsIcaDemoStack extends Stack {
 
     // role to allow api gateway write message to sqs queue
     const role = new aws_iam.Role(this, "apiGatewayWriteToSqsRole", {
-      assumedBy: new aws_iam.ServicePrincipal(
-        "apigateway.amazonaws.com"
-      ),
+      assumedBy: new aws_iam.ServicePrincipal("apigateway.amazonaws.com"),
     });
 
     role.attachInlinePolicy(
@@ -253,13 +221,9 @@ export class ApiGatewaySqsIcaDemoStack extends Stack {
     );
 
     // create an api gateway
-    const api_gw = new aws_apigateway.RestApi(
-      this,
-      "apiGatewaySqsDemo",
-      {
-        restApiName: "api-gateway-sqs-demo",
-      }
-    );
+    const api_gw = new aws_apigateway.RestApi(this, "apiGatewaySqsDemo", {
+      restApiName: "api-gateway-sqs-demo",
+    });
 
     // api gateway aws integration
     const integration = new aws_apigateway.AwsIntegration({
